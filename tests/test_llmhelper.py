@@ -5,13 +5,14 @@ import time
 import torch
 import torch.nn as nn
 import json as js
+
 from wingoal_utils.common import (
     set_log_file,
     log,
     logs
 )
-sys.path.insert(0, '..\\..\\..\\ml_learning\\transformer')
-sys.path.append('..\\..\\..\\ml_learning')
+sys.path.insert(0, '..\\..\\..\\ml-learning\\transformer')
+sys.path.append('..\\..\\..\\ml-learning')
 from transformer import Transformer, validate
 from dataset_P3n9W31 import TP3n9W31Data
 
@@ -76,7 +77,7 @@ def test_load_to_state_dict():
 # test the llmhelper.load_gguf_to_state_dict(...) function
 def test_load_gguf_to_state_dict():
     gguf_file = '../../models/out_Meta-Llama-3-8B-gguf/llama-3-8b-model.gguf'
-    state_dict = llmhelper.load_gguf_to_state_dict(gguf_file)
+    state_dict, state_meta = llmhelper.load_gguf_to_state_dict(gguf_file)
     params = llmhelper.model_meta_params(state_dict)
     print(js.dumps(params, indent=2))
 
@@ -110,22 +111,31 @@ def test_model_meta_params():
 # test these 3 functions:
 #    1. llmhelper.load_gguf_to_state_dict(...) function
 #    2. llmhelper.model_meta_params(...) function (this function was invoked inside load_gguf_to_state_dict(...))
-#    3. llmhelper.load_gguf_to_state_dict(...) function
+#    3. llmhelper.save_meta_params(...) function
 def test_save_meta_params():
-    gguf_file = '../../models/out_Meta-Llama-3-8B-gguf/llama-3-8b-model.gguf'
-    save_excel_file = 'logs/llama-3-8b-model.xlsx'
-    state_dict = llmhelper.load_gguf_to_state_dict(gguf_file)
-    llmhelper.save_meta_params(state_dict, save_excel_file)
+    gguf_file = '../../models/Llama-3-Chinese-8B-Instruct-v2-GGUF/ggml-model-q4_0.gguf'
+    save_excel_file = 'logs/Llama-3-Chinese-8B-Instruct-v2-GGUF-q4_0.xlsx'
+    save_raw_excel_file = 'logs/Llama-3-Chinese-8B-Instruct-v2-GGUF-q4_0-raw.xlsx'
+    state_dict, state_meta = llmhelper.load_gguf_to_state_dict(gguf_file)
+    llmhelper.save_meta_params(state_dict, save_excel_file, state_meta)
+    llmhelper.save_meta_params(state_dict, save_raw_excel_file)
 
 
 def test_diff_params():
-    # src_gguf_file = '../../models/out_Meta-Llama-3-8B-gguf/llama-3-8b-model.gguf'
-    src_gguf_file = '../../models/Llama3-8B-Chinese-Chat-GGUF-4bit/Llama3-8B-Chinese-Chat-q4_0-v2_1.gguf'
-    dest_gguf_file = '../../models/out_Meta-Llama-3-8B-gguf/llama-3-8b-model-q4_0.gguf'
-    dest_safe_file = 'models/transformer-P3n9W31_0.1-800'
-    save_excel_file = 'logs/llama-3-8b-model-transformer-diffs.xlsx'
-    src_state_dict = llmhelper.load_gguf_to_state_dict(src_gguf_file)
-    # dest_state_dict = llmhelper.load_gguf_to_state_dict(dest_gguf_file)
+    # 1. test the gguf format model file
+    src_gguf_file = '../../models/Llama-3-Chinese-8B-Instruct-v2-GGUF/ggml-model-f16.gguf'
+    dest_gguf_file = '../../models/Llama-3-Chinese-8B-Instruct-v2-GGUF/ggml-model-q4_0.gguf'
+    save_excel_file = 'logs/Llama-3-Chinese-8B-Instruct-v2-GGUF-diffs-f16-vs-q4_0.xlsx'
+    src_state_dict, src_state_meta = llmhelper.load_gguf_to_state_dict(src_gguf_file)
+    dest_state_dict, dest_state_meta = llmhelper.load_gguf_to_state_dict(dest_gguf_file)
+    src_params = llmhelper.model_meta_params(src_state_dict, src_state_meta)
+    dest_params = llmhelper.model_meta_params(dest_state_dict, dest_state_meta)
+    llmhelper.diff_params(src_params, dest_params, save_excel_file, ignore_fields=['device'])
+    # 2. test the safetensors format model file
+    src_safe_file = '../../models/Llama-3-Chinese-8B-Instruct-v2'
+    dest_safe_file = '../../models/Llama-3-Chinese-8B-Instruct-v3'
+    save_excel_file = 'logs/Llama-3-Chinese-8B-Instruct-diffs-v2-vs-v3.xlsx'
+    src_state_dict = llmhelper.load_safetensors_to_state_dict(src_safe_file)
     dest_state_dict = llmhelper.load_safetensors_to_state_dict(dest_safe_file)
     src_params = llmhelper.model_meta_params(src_state_dict)
     dest_params = llmhelper.model_meta_params(dest_state_dict)
