@@ -169,6 +169,15 @@ def load_gguf_to_state_dict(model_path):
     return state_dict, state_meta
 
 
+def load_to_state_dict(model_path):
+    state_meta = None
+    if os.path.isfile(model_path) and model_path.endswith('.gguf'):
+        state_dict, state_meta = load_gguf_to_state_dict(model_path)
+    else:
+        state_dict = load_safetensors_to_state_dict(model_path)
+    return state_dict, state_meta
+
+
 def sha256(tensor: torch.Tensor):
     sha_obj = hashlib.sha256()
     if tensor.dtype == torch.bfloat16:
@@ -215,6 +224,7 @@ def diff_params(src, dest, save_excel_file, ignore_fields=None):
         if not param_dest:
             param_cmp.update({'dest_' + k: None for k, _ in param.items() if k not in ignore_fields})
             param_cmp['flag'] = '-'  # dest中被删除了
+            param_cmp['different_field'] = None
         else:
             param_cmp.update({'dest_' + k: v for k, v in param_dest.items() if k not in ignore_fields})
             different_field = None
